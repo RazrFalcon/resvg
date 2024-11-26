@@ -1,0 +1,8 @@
+<svg id="svg1" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Embedded PNG with luma</title>
+
+    <image id="image1" x="8" y="8" width="64" height="64" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAAAAACIM/FCAAADg0lEQVR4Ae3gAZAkSZIkSRKLqpm7R0REZmZmVlVVVVV3d3d3d/fMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMdHd3d3dXV1VVVVVmZkZGRIS7m5kKz0xmV3d1d3dPz8zMzMxMYuX/Bir/N1D5v4HK/w1U/m+g8n8Dlf8bqPzfQOX/Bir/N1D5v4HK/w1U/m+g8n8Dlf8bqPzfQOX/Bir/N1D5v4HK/w1Uno9z3K/BysJoAIawRtFgEk2kEzWSJG1lkiQkTpM4ZadxWk47TUJi27axnZA2aWzbto1J206wbds2dhrbtm3/AM+Dyv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zdQ+b+Byv8NVP5voPJ/A5X/G6j830Dl/wYq/zcg/m+g8n8Dlf8bqPzfQOX/Bir/N1D5v4HK/w1U/m+g8n8Dlf8bqPzfQOX/Bir/N1D5v4HK/w1U/m+g8n8Dlf8bqPzfwD8C0btoHlhAxXAAAAAASUVORK5CYII="/>
+
+    <rect id="frame" x="1" y="1" width="78" height="78" fill="none" stroke="black"/>
+</svg>
