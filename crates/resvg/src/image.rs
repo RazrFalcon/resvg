@@ -94,7 +94,10 @@ mod raster_images {
             let data = decoder.decode().ok()?;
             match output_cs {
                 ColorSpace::RGBA => data,
-                // For some reason zune jpeg won't coerce luma JPEGs into RGBA, so we do it manually.
+                // `set_output_color_space` is not guaranteed to actually always set the output space
+                // to RGBA (see https://docs.rs/zune-core/latest/zune_core/options/struct.DecoderOptions.html#method.jpeg_set_out_colorspace).
+                // In particular, it seems like it doesn't work for luma JPEGs,
+                // so we convert them manually.
                 ColorSpace::Luma => data
                     .into_iter()
                     .flat_map(|p| [p, p, p, 255])
