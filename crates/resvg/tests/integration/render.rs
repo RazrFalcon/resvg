@@ -1101,7 +1101,9 @@ use crate::render;
 #[test] fn structure_image_embedded_gif() { assert_eq!(render("tests/structure/image/embedded-gif"), 0); }
 #[test] fn structure_image_embedded_jpeg_as_image_jpeg() { assert_eq!(render("tests/structure/image/embedded-jpeg-as-image-jpeg"), 0); }
 #[test] fn structure_image_embedded_jpeg_as_image_jpg() { assert_eq!(render("tests/structure/image/embedded-jpeg-as-image-jpg"), 0); }
+#[test] fn structure_image_embedded_jpeg_luma() { assert_eq!(render("tests/structure/image/embedded-jpeg-luma"), 0); }
 #[test] fn structure_image_embedded_jpeg_without_mime() { assert_eq!(render("tests/structure/image/embedded-jpeg-without-mime"), 0); }
+#[test] fn structure_image_embedded_png_luma() { assert_eq!(render("tests/structure/image/embedded-png-luma"), 0); }
 #[test] fn structure_image_embedded_png() { assert_eq!(render("tests/structure/image/embedded-png"), 0); }
 #[test] fn structure_image_embedded_svg_with_text() { assert_eq!(render("tests/structure/image/embedded-svg-with-text"), 0); }
 #[test] fn structure_image_embedded_svg_without_mime() { assert_eq!(render("tests/structure/image/embedded-svg-without-mime"), 0); }
