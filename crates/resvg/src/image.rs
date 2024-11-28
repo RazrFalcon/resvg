@@ -95,7 +95,7 @@ mod raster_images {
             match output_cs {
                 ColorSpace::RGBA => data,
                 // `set_output_color_space` is not guaranteed to actually always set the output space
-                // to RGBA (see https://docs.rs/zune-core/latest/zune_core/options/struct.DecoderOptions.html#method.jpeg_set_out_colorspace).
+                // to RGBA (its docs say "we do not guarantee the decoder can convert to all colorspaces").
                 // In particular, it seems like it doesn't work for luma JPEGs,
                 // so we convert them manually.
                 ColorSpace::Luma => data
