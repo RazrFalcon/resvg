@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+### Added
+- Added support for the `background-color` attribute.
+- Add support for additional `image-rendering` attributes.
+
 ### Changed
 - License to `Apache-2.0 OR MIT`.
   See [resvg#838](https://github.com/linebender/resvg/issues/838) for more information.
+
+### Fixed
+- Fix relative units handling when `use` references `symbol`.
 
 ## [0.44.0] - 2024-09-28
 ### Added
