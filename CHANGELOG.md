@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
+
+## [0.45.0] - 2024-12-11
 ### Added
 - Added support for the `background-color` attribute.
 - Add support for additional `image-rendering` attributes.
