@@ -967,7 +967,7 @@ fn apply_length_adjust(chunk: &TextChunk, clusters: &mut [GlyphCluster]) {
                 cluster_indexes.push(index);
             }
         }
-        // Complex scripts can have mutli-codepoint clusters therefore we have to remove duplicates.
+        // Complex scripts can have multi-codepoint clusters therefore we have to remove duplicates.
         cluster_indexes.sort();
         cluster_indexes.dedup();
 
