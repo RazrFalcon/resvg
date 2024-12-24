@@ -116,7 +116,7 @@ fn stylesheet_injection_with_important() {
         unreachable!()
     };
 
-    // All rects should be overriden, since we use `important`.
+    // All rects should be overridden, since we use `important`.
     assert_eq!(
         first.fill().unwrap().paint(),
         &usvg::Paint::Color(Color::new_rgb(255, 0, 0))
