@@ -424,7 +424,7 @@ impl FitTo {
 
 fn list_fonts(args: &CliArgs) {
     let mut fontdb = fontdb::Database::new();
-    load_fonts(&args, &mut fontdb);
+    load_fonts(args, &mut fontdb);
 
     use fontdb::Family;
     println!("serif: {}", fontdb.family_name(&Family::Serif));
