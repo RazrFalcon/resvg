@@ -809,7 +809,7 @@ fn collect_normals(
                 let mut offset = curve.inv_arclen(offset - length, arclen_accuracy as f64);
                 // some rounding error may occur, so we give offset a little tolerance
                 debug_assert!((-1.0e-3..=1.0 + 1.0e-3).contains(&offset));
-                offset = offset.min(1.0).max(0.0);
+                offset = offset.clamp(0.0, 1.0);
 
                 let pos = curve.eval(offset);
                 let d = curve.deriv().eval(offset);
@@ -1448,7 +1448,7 @@ impl<'a> GlyphClusters<'a> {
     }
 }
 
-impl<'a> Iterator for GlyphClusters<'a> {
+impl Iterator for GlyphClusters<'_> {
     type Item = (std::ops::Range<usize>, ByteIndex);
 
     fn next(&mut self) -> Option<Self::Item> {

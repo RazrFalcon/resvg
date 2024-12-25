@@ -155,7 +155,7 @@ pub extern "C" fn resvg_options_set_resources_dir(opt: *mut resvg_options, path:
 /// Default: 96
 #[no_mangle]
 pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f32) {
-    cast_opt(opt).dpi = dpi as f32;
+    cast_opt(opt).dpi = dpi;
 }
 
 /// @brief Sets the default font family.

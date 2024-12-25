@@ -16,7 +16,7 @@ fn clippath_with_invalid_child() {
 
     let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
     // clipPath is invalid and should be removed together with rect.
-    assert_eq!(tree.root().has_children(), false);
+    assert!(!tree.root().has_children());
 }
 
 #[test]
