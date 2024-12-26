@@ -158,17 +158,17 @@ pub extern "C" fn resvg_options_set_dpi(opt: *mut resvg_options, dpi: f32) {
     cast_opt(opt).dpi = dpi as f32;
 }
 
-/// @brief Sets a stylesheet path that will be used when resolving CSS attributes.
+/// @brief Provides the content of a stylesheet that will be used when resolving CSS attributes.
 ///
 /// Must be UTF-8. Can be set to NULL.
 ///
 /// Default: NULL
 #[no_mangle]
-pub extern "C" fn resvg_options_set_stylesheet(opt: *mut resvg_options, path: *const c_char) {
-    if path.is_null() {
+pub extern "C" fn resvg_options_set_stylesheet(opt: *mut resvg_options, content: *const c_char) {
+    if content.is_null() {
         cast_opt(opt).style_sheet = None;
     } else {
-        cast_opt(opt).style_sheet = Some(cstr_to_str(path).unwrap().into());
+        cast_opt(opt).style_sheet = Some(cstr_to_str(content).unwrap().into());
     }
 }
 

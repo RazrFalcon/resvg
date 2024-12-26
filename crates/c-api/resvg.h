@@ -174,13 +174,13 @@ void resvg_options_set_resources_dir(resvg_options *opt, const char *path);
 void resvg_options_set_dpi(resvg_options *opt, float dpi);
 
 /**
- * @brief Sets a stylesheet path that will be used when resolving CSS attributes.
+ * @brief Provides the content of a stylesheet that will be used when resolving CSS attributes.
  *
  * Must be UTF-8. Can be set to NULL.
  *
  * Default: NULL
  */
-void resvg_options_set_stylesheet(resvg_options *opt, const char *path);
+void resvg_options_set_stylesheet(resvg_options *opt, char *const content);
 
 /**
  * @brief Sets the default font family.
