@@ -180,7 +180,7 @@ void resvg_options_set_dpi(resvg_options *opt, float dpi);
  *
  * Default: NULL
  */
-void resvg_options_set_stylesheet(resvg_options *opt, char *const content);
+void resvg_options_set_stylesheet(resvg_options *opt, const char *content);
 
 /**
  * @brief Sets the default font family.
