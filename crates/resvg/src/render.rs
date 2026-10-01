@@ -129,6 +129,20 @@ fn render_layer(
         crate::geom::fit_to_rect(bbox, ctx.max_bbox)?
     };
 
+    // A clipped group can only show what falls inside its clip path, so its
+    // layer does not need to be larger than the clip path bounds. Clip paths
+    // exported by illustration tools are often much smaller than the content
+    // they clip, and rendering and clipping both cost per layer pixel.
+    if group.filters().is_empty() && group.mask().is_none() {
+        if let Some(clip_bbox) = group
+            .clip_path()
+            .filter(|clip| is_simple_clip(clip))
+            .and_then(|clip| clip_bounds(clip, transform))
+        {
+            ibbox = ibbox.intersect(&clip_bbox)?;
+        }
+    }
+
     // Make sure our layer is not bigger than 4x the canvas size.
     // This is required to prevent huge layers.
     if group.filters().is_empty() {
@@ -169,6 +183,53 @@ fn render_layer(
     }
 
     Some((sub_pixmap, ibbox))
+}
+
+/// A clip path made of paths only (possibly wrapped in plain groups, as
+/// `<use>` produces): no nested clip path, mask, filter or text, so that its
+/// bounding box is exactly what it lets through.
+fn is_simple_clip(clip: &usvg::ClipPath) -> bool {
+    clip.clip_path().is_none() && has_only_paths(clip.root())
+}
+
+fn has_only_paths(group: &usvg::Group) -> bool {
+    group.children().iter().all(|node| match node {
+        usvg::Node::Path(_) => true,
+        usvg::Node::Group(group) => {
+            group.clip_path().is_none()
+                && group.mask().is_none()
+                && group.filters().is_empty()
+                && has_only_paths(group)
+        }
+        _ => false,
+    })
+}
+
+/// The canvas area a clip path can let through, expanded by 2px on each side
+/// (like group layers) so that anti-aliased edges are kept.
+fn clip_bounds(
+    clip: &usvg::ClipPath,
+    transform: tiny_skia::Transform,
+) -> Option<tiny_skia::IntRect> {
+    // Rotated or skewed clip paths keep the full layer, as before: shrinking
+    // it changes the anti-aliasing of a few edge pixels.
+    let transform = transform.pre_concat(clip.transform());
+    if transform.has_skew() {
+        return None;
+    }
+
+    let bbox = clip
+        .root()
+        .bounding_box()
+        .to_non_zero_rect()?
+        .transform(transform)?;
+
+    tiny_skia::IntRect::from_xywh(
+        (bbox.x().floor() as i32).checked_sub(2)?,
+        (bbox.y().floor() as i32).checked_sub(2)?,
+        (bbox.width().ceil() as u32).checked_add(4)?,
+        (bbox.height().ceil() as u32).checked_add(4)?,
+    )
 }
 
 pub fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
