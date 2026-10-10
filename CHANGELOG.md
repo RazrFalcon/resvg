@@ -22,6 +22,8 @@ This changelog also contains important changes in dependencies.
 - Incorrect transform order on the outermost `svg` element with a `viewBox`. (#899)
 - Relative positioning of right-to-left text with `dx` and `dy`, including text on a path and text decorations. (#1093)
 - `text-anchor` now uses the actual extent of a text chunk, which `dx` and `textLength` can change. (#1145)
+- `feDisplacementMap` applied `scale` twice, displacing almost everything out of the filter region,
+  and read the displacement map with premultiplied colors. (#1019)
 
 ## [0.48.1] 2026-08-02
 
