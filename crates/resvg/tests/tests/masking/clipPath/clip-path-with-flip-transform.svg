@@ -1,0 +1,14 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Clip path with a mirroring `transform`</title>
+
+    <clipPath id="clip1" transform="matrix(-1 0 0 1 200 0)">
+        <path id="path1" d="M 20.5 30.5 L 90 30.5 L 20.5 170 Z"/>
+    </clipPath>
+    <g id="g1" clip-path="url(#clip1)">
+        <rect id="rect1" x="0" y="0" width="200" height="200" fill="green"/>
+        <circle id="circle1" cx="150" cy="70" r="30" fill="blue"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -1,0 +1,18 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Clip path made of a `use` with an offset</title>
+
+    <defs id="defs1">
+        <path id="path1" d="M 20.5 20.5 h 60 v 60 h -60 z"/>
+    </defs>
+    <clipPath id="clip1">
+        <use id="use1" xlink:href="#path1" x="30.25" y="50.75"/>
+    </clipPath>
+    <g id="g1" clip-path="url(#clip1)">
+        <rect id="rect1" x="0" y="0" width="200" height="200" fill="green"/>
+        <circle id="circle1" cx="100" cy="100" r="30" fill="blue"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

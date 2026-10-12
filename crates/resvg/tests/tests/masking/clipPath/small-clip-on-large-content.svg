@@ -1,0 +1,15 @@
+<svg id="svg1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <title>Small clip path on content larger than the canvas</title>
+
+    <clipPath id="clip1">
+        <circle id="circle1" cx="100.3" cy="90.7" r="40.4"/>
+    </clipPath>
+    <g id="g1" clip-path="url(#clip1)">
+        <rect id="rect1" x="-100" y="-100" width="400" height="400" fill="green"/>
+        <rect id="rect2" x="-100" y="80" width="400" height="20.5" fill="blue"/>
+        <rect id="rect3" x="95.5" y="-100" width="10" height="400" fill="yellow"/>
+    </g>
+
+    <!-- image frame -->
+    <rect id="frame" x="1" y="1" width="198" height="198" fill="none" stroke="black"/>
+</svg>

@@ -422,12 +422,18 @@ use crate::render;
 #[test] fn masking_clipPath_clip_path_on_child_with_transform() { assert_eq!(render("tests/masking/clipPath/clip-path-on-child-with-transform"), 0); }
 #[test] fn masking_clipPath_clip_path_on_child() { assert_eq!(render("tests/masking/clipPath/clip-path-on-child"), 0); }
 #[test] fn masking_clipPath_clip_path_on_children() { assert_eq!(render("tests/masking/clipPath/clip-path-on-children"), 0); }
+#[test] fn masking_clipPath_clip_path_on_scaled_group() { assert_eq!(render("tests/masking/clipPath/clip-path-on-scaled-group"), 0); }
 #[test] fn masking_clipPath_clip_path_on_self_2() { assert_eq!(render("tests/masking/clipPath/clip-path-on-self-2"), 0); }
 #[test] fn masking_clipPath_clip_path_on_self() { assert_eq!(render("tests/masking/clipPath/clip-path-on-self"), 0); }
+#[test] fn masking_clipPath_clip_path_outside_of_content() { assert_eq!(render("tests/masking/clipPath/clip-path-outside-of-content"), 0); }
+#[test] fn masking_clipPath_clip_path_partially_outside_canvas() { assert_eq!(render("tests/masking/clipPath/clip-path-partially-outside-canvas"), 0); }
+#[test] fn masking_clipPath_clip_path_via_use() { assert_eq!(render("tests/masking/clipPath/clip-path-via-use"), 0); }
+#[test] fn masking_clipPath_clip_path_with_flip_transform() { assert_eq!(render("tests/masking/clipPath/clip-path-with-flip-transform"), 0); }
 #[test] fn masking_clipPath_clip_path_with_transform_on_text() { assert_eq!(render("tests/masking/clipPath/clip-path-with-transform-on-text"), 0); }
 #[test] fn masking_clipPath_clip_path_with_transform() { assert_eq!(render("tests/masking/clipPath/clip-path-with-transform"), 0); }
 #[test] fn masking_clipPath_clip_rule_from_parent_node() { assert_eq!(render("tests/masking/clipPath/clip-rule-from-parent-node"), 0); }
 #[test] fn masking_clipPath_clip_rule_eq_evenodd() { assert_eq!(render("tests/masking/clipPath/clip-rule=evenodd"), 0); }
+#[test] fn masking_clipPath_clipPathUnits_eq_objectBoundingBox_on_large_group() { assert_eq!(render("tests/masking/clipPath/clipPathUnits=objectBoundingBox-on-large-group"), 0); }
 #[test] fn masking_clipPath_clipPathUnits_eq_objectBoundingBox() { assert_eq!(render("tests/masking/clipPath/clipPathUnits=objectBoundingBox"), 0); }
 #[test] fn masking_clipPath_clipping_with_complex_text_1() { assert_eq!(render("tests/masking/clipPath/clipping-with-complex-text-1"), 0); }
 #[test] fn masking_clipPath_clipping_with_complex_text_2() { assert_eq!(render("tests/masking/clipPath/clipping-with-complex-text-2"), 0); }
@@ -449,6 +455,7 @@ use crate::render;
 #[test] fn masking_clipPath_mixed_clip_rule() { assert_eq!(render("tests/masking/clipPath/mixed-clip-rule"), 0); }
 #[test] fn masking_clipPath_multiple_children() { assert_eq!(render("tests/masking/clipPath/multiple-children"), 0); }
 #[test] fn masking_clipPath_nested_clip_path() { assert_eq!(render("tests/masking/clipPath/nested-clip-path"), 0); }
+#[test] fn masking_clipPath_nested_clipped_groups() { assert_eq!(render("tests/masking/clipPath/nested-clipped-groups"), 0); }
 #[test] fn masking_clipPath_no_children() { assert_eq!(render("tests/masking/clipPath/no-children"), 0); }
 #[test] fn masking_clipPath_none() { assert_eq!(render("tests/masking/clipPath/none"), 0); }
 #[test] fn masking_clipPath_on_a_horizontal_line() { assert_eq!(render("tests/masking/clipPath/on-a-horizontal-line"), 0); }
@@ -461,6 +468,7 @@ use crate::render;
 #[test] fn masking_clipPath_recursive() { assert_eq!(render("tests/masking/clipPath/recursive"), 0); }
 #[test] fn masking_clipPath_self_recursive() { assert_eq!(render("tests/masking/clipPath/self-recursive"), 0); }
 #[test] fn masking_clipPath_simple_case() { assert_eq!(render("tests/masking/clipPath/simple-case"), 0); }
+#[test] fn masking_clipPath_small_clip_on_large_content() { assert_eq!(render("tests/masking/clipPath/small-clip-on-large-content"), 0); }
 #[test] fn masking_clipPath_stroke_has_no_effect() { assert_eq!(render("tests/masking/clipPath/stroke-has-no-effect"), 0); }
 #[test] fn masking_clipPath_switch_is_not_a_valid_child() { assert_eq!(render("tests/masking/clipPath/switch-is-not-a-valid-child"), 0); }
 #[test] fn masking_clipPath_symbol_via_use_is_not_a_valid_child() { assert_eq!(render("tests/masking/clipPath/symbol-via-use-is-not-a-valid-child"), 0); }
