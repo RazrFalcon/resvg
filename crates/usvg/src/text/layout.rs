@@ -1478,6 +1478,8 @@ fn shape_text_with_font(
 
     // `harfrust::Font` needs owned font data: share it if the font is already in memory,
     // otherwise copy it.
+    // TODO: add an ID -> font data cache so that non-`Source::Binary` fonts
+    // aren't re-copied for every text span.
     let hr_font =
         if let Some((fontdb::Source::Binary(data), face_index)) = fontdb.face_source(font.id) {
             harfrust::Font::new(data, face_index)
