@@ -196,6 +196,39 @@ pub fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
 #[cfg(test)]
 mod tests {
 
+    #[test]
+    fn shared_feimage_resolves_object_bounding_box_gradient() {
+        let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+            <defs>
+                <linearGradient id="gradient">
+                    <stop stop-color="red"/><stop offset="1" stop-color="blue"/>
+                </linearGradient>
+                <rect id="input" width="100" height="40" fill="url(#gradient)"/>
+                <filter id="f" filterUnits="userSpaceOnUse" x="0" y="0"
+                    width="100" height="40"><feImage href="#input"/></filter>
+            </defs>
+            <rect width="100" height="40" filter="url(#f)"/>
+            <g transform="translate(0 60)">
+                <rect width="100" height="40" filter="url(#f)"/>
+            </g>
+            <use href="#input" y="120"/>
+        </svg>"##;
+        let tree = usvg::Tree::from_str(svg, &usvg::Options::default()).unwrap();
+        let mut pixmap = tiny_skia::Pixmap::new(200, 200).unwrap();
+        crate::render(
+            &tree,
+            tiny_skia::Transform::identity(),
+            &mut pixmap.as_mut(),
+        );
+        for y in [20, 80] {
+            for x in 0..100 {
+                assert_eq!(pixmap.pixel(x, y), pixmap.pixel(x, 140));
+            }
+        }
+        assert!(pixmap.pixel(10, 20).unwrap().red() > 200);
+        assert!(pixmap.pixel(90, 20).unwrap().blue() > 200);
+    }
+
     // Derived from https://github.com/servo/servo/issues/42258.
     #[test]
     fn filter_bbox_outside_int_rect() {

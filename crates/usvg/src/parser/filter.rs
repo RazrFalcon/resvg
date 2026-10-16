@@ -12,7 +12,7 @@ use svgtypes::{AspectRatio, Length, LengthUnit as Unit};
 
 use crate::{
     ApproxZeroUlps, Color, Group, Node, NonEmptyString, NonZeroF32, NonZeroRect, Opacity, Size,
-    Units,
+    Transform, Units,
     filter::{self, *},
 };
 
@@ -836,6 +836,15 @@ fn convert_image_inner(
         super::converter::convert_element(node, &state, cache, &mut root);
         return if root.has_children() {
             root.calculate_bounding_boxes();
+            // Resolve paints before the filter is shared between multiple nodes.
+            // The final tree pass cannot mutate a shared filter's image root.
+            super::paint_server::update_paint_servers(
+                &mut root,
+                Transform::default(),
+                None,
+                None,
+                cache,
+            );
             // Transfer node id from group's child to the group itself if needed.
             if let Some(Node::Group(g)) = root.children.first_mut() {
                 if let Some(child2) = g.children.first_mut() {
