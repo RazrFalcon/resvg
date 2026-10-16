@@ -112,10 +112,13 @@ fn resolve(
     };
 
     let clip_path = if has_overflow {
+        // Clip to the marker viewport, expressed in the marker content's coordinates.
+        // With meet/slice, the viewport can be larger/smaller than the viewBox.
+        let viewport = r.size().to_non_zero_rect(0.0, 0.0);
         let clip_rect = if let Some(vbox) = view_box {
-            vbox.rect
+            viewport.transform(vbox.to_transform(r.size()).invert()?)?
         } else {
-            r.size().to_non_zero_rect(0.0, 0.0)
+            viewport
         };
 
         let mut clip_path = ClipPath::empty(cache.gen_clip_path_id());
