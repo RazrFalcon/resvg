@@ -432,7 +432,7 @@ fn apply_inner(
                 let input = get_input(fe.input(), region, source, &results)?;
                 apply_tile(input, region)
             }
-            usvg::filter::Kind::Image(fe) => apply_image(fe, region, subregion, ts),
+            usvg::filter::Kind::Image(fe) => apply_image(fe, region, primitive.rect(), ts),
             usvg::filter::Kind::ComponentTransfer(fe) => {
                 let input = get_input(fe.input(), region, source, &results)?;
                 apply_component_transfer(fe, cs, input)
@@ -873,26 +873,30 @@ fn apply_tile(input: Image, region: IntRect) -> Result<Image, Error> {
 fn apply_image(
     fe: &usvg::filter::Image,
     region: IntRect,
-    subregion: IntRect,
+    subregion: usvg::NonZeroRect,
     ts: usvg::Transform,
 ) -> Result<Image, Error> {
     let mut pixmap = tiny_skia::Pixmap::try_create(region.width(), region.height())?;
 
-    let (sx, sy) = ts.get_scale();
-    let transform = tiny_skia::Transform::from_row(
-        sx,
-        0.0,
-        0.0,
-        sy,
-        subregion.x() as f32,
-        subregion.y() as f32,
-    );
+    let transform = ts.pre_translate(subregion.x(), subregion.y());
 
     let ctx = crate::render::Context {
         max_bbox: tiny_skia::IntRect::from_xywh(0, 0, region.width(), region.height()).unwrap(),
     };
 
     crate::render::render_nodes(fe.root(), &ctx, transform, &mut pixmap.as_mut());
+
+    if ts.kx != 0.0 || ts.ky != 0.0 {
+        let mut mask =
+            tiny_skia::Mask::new(region.width(), region.height()).ok_or(Error::InvalidRegion)?;
+        mask.fill_path(
+            &tiny_skia::PathBuilder::from_rect(subregion.to_rect()),
+            tiny_skia::FillRule::Winding,
+            true,
+            ts,
+        );
+        pixmap.apply_mask(&mask);
+    }
 
     Ok(Image::from_image(
         pixmap,
@@ -1160,4 +1164,50 @@ fn resolve_std_dev(std_dx: f32, std_dy: f32, ts: usvg::Transform) -> Option<(f64
 fn scale_coordinates(x: f32, y: f32, ts: usvg::Transform) -> Option<(f32, f32)> {
     let (sx, sy) = ts.get_scale();
     Some((x * sx, y * sy))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn feimage_preserves_rotation_skew_and_reflection() {
+        for transform in [
+            "translate(25 10) rotate(25)",
+            "translate(15 10) skewX(20)",
+            "translate(150 10) scale(-1 1)",
+        ] {
+            let svg = format!(
+                r##"<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+                    <defs><rect id="input" x="10" y="10" width="70" height="30" fill="red"/>
+                        <filter id="f" filterUnits="userSpaceOnUse" x="0" y="0"
+                            width="120" height="70"><feImage href="#input"/></filter>
+                    </defs>
+                    <g transform="{transform}">
+                        <rect width="100" height="50" filter="url(#f)"/>
+                    </g>
+                    <g transform="translate(0 100)">
+                        <g transform="{transform}"><use href="#input"/></g>
+                    </g>
+                </svg>"##
+            );
+            let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+            for scale in [1, 2] {
+                let mut pixmap = tiny_skia::Pixmap::new(200 * scale, 200 * scale).unwrap();
+                crate::render(
+                    &tree,
+                    tiny_skia::Transform::from_scale(scale as f32, scale as f32),
+                    &mut pixmap.as_mut(),
+                );
+                for y in 0..100 * scale {
+                    for x in 0..200 * scale {
+                        let actual = pixmap.pixel(x, y).unwrap();
+                        let expected = pixmap.pixel(x, y + 100 * scale).unwrap();
+                        assert!(
+                            actual.alpha().abs_diff(expected.alpha()) <= 1,
+                            "pixel ({x}, {y}) at scale {scale} with {transform}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }
