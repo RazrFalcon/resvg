@@ -710,7 +710,7 @@ fn text_path_start_offset_is_accurate() {
         .load_fonts_dir(env!("CARGO_MANIFEST_DIR").to_string() + "/../resvg/tests/fonts");
     opts.font_family = "Noto Sans".to_string();
 
-    // The first glyph starts 20 units along a horizontal, vertical, or curved path.
+    // The first glyph starts 20 units along horizontal and vertical paths.
     // The collinear cubic has a non-uniform parameterization.
     for (path, x, y) in [
         ("M20 125 H376", 40.0, 125.0),
