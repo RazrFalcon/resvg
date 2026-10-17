@@ -143,6 +143,13 @@ pub(crate) fn convert(
     }
 
     mask.root.calculate_bounding_boxes();
+    super::paint_server::update_paint_servers(
+        &mut mask.root,
+        Transform::default(),
+        None,
+        None,
+        cache,
+    );
 
     let mask = Arc::new(mask);
     cache.masks.insert(id_copy, mask.clone());

@@ -196,6 +196,7 @@ use crate::render;
 #[test] fn filters_feImage_recursive_links_1() { assert_eq!(render("tests/filters/feImage/recursive-links-1"), 0); }
 #[test] fn filters_feImage_recursive_links_2() { assert_eq!(render("tests/filters/feImage/recursive-links-2"), 0); }
 #[test] fn filters_feImage_self_recursive() { assert_eq!(render("tests/filters/feImage/self-recursive"), 0); }
+#[test] fn filters_feImage_shared_with_objectBoundingBox_gradient() { assert_eq!(render("tests/filters/feImage/shared-with-objectBoundingBox-gradient"), 0); }
 #[test] fn filters_feImage_simple_case() { assert_eq!(render("tests/filters/feImage/simple-case"), 0); }
 #[test] fn filters_feImage_svg() { assert_eq!(render("tests/filters/feImage/svg"), 0); }
 #[test] fn filters_feImage_with_subregion_1() { assert_eq!(render("tests/filters/feImage/with-subregion-1"), 0); }
@@ -497,6 +498,7 @@ use crate::render;
 #[test] fn masking_mask_recursive_on_self() { assert_eq!(render("tests/masking/mask/recursive-on-self"), 0); }
 #[test] fn masking_mask_recursive() { assert_eq!(render("tests/masking/mask/recursive"), 0); }
 #[test] fn masking_mask_self_recursive() { assert_eq!(render("tests/masking/mask/self-recursive"), 0); }
+#[test] fn masking_mask_shared_with_objectBoundingBox_gradient() { assert_eq!(render("tests/masking/mask/shared-with-objectBoundingBox-gradient"), 0); }
 #[test] fn masking_mask_simple_case() { assert_eq!(render("tests/masking/mask/simple-case"), 0); }
 #[test] fn masking_mask_transform_has_no_effect() { assert_eq!(render("tests/masking/mask/transform-has-no-effect"), 0); }
 #[test] fn masking_mask_transform_on_shape() { assert_eq!(render("tests/masking/mask/transform-on-shape"), 0); }
@@ -571,6 +573,7 @@ use crate::render;
 #[test] fn paint_servers_pattern_recursive_on_child() { assert_eq!(render("tests/paint-servers/pattern/recursive-on-child"), 0); }
 #[test] fn paint_servers_pattern_self_recursive_on_child() { assert_eq!(render("tests/paint-servers/pattern/self-recursive-on-child"), 0); }
 #[test] fn paint_servers_pattern_self_recursive() { assert_eq!(render("tests/paint-servers/pattern/self-recursive"), 0); }
+#[test] fn paint_servers_pattern_shared_with_objectBoundingBox_gradient() { assert_eq!(render("tests/paint-servers/pattern/shared-with-objectBoundingBox-gradient"), 0); }
 #[test] fn paint_servers_pattern_simple_case() { assert_eq!(render("tests/paint-servers/pattern/simple-case"), 0); }
 #[test] fn paint_servers_pattern_text_child() { assert_eq!(render("tests/paint-servers/pattern/text-child"), 0); }
 #[test] fn paint_servers_pattern_tiny_pattern_upscaled() { assert_eq!(render("tests/paint-servers/pattern/tiny-pattern-upscaled"), 0); }
