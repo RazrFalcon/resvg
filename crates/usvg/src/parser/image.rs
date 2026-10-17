@@ -261,6 +261,7 @@ pub(crate) fn convert_inner(
 
         let mut clip = ClipPath::empty(cache.gen_clip_path_id());
         clip.root.children.push(Node::Path(Box::new(path)));
+        clip.root.calculate_bounding_boxes();
 
         // Clip path should not be affected by the image viewbox transform.
         // The final structure should look like:
