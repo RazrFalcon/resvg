@@ -196,68 +196,6 @@ pub fn convert_blend_mode(mode: usvg::BlendMode) -> tiny_skia::BlendMode {
 #[cfg(test)]
 mod tests {
 
-    #[test]
-    fn marker_clips_to_viewport_with_meet_and_slice() {
-        let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
-            <defs>
-                <marker id="wide" markerUnits="userSpaceOnUse" markerWidth="40"
-                    markerHeight="20" refX="10" refY="10" viewBox="0 0 20 20">
-                    <rect x="-20" y="-20" width="60" height="60" fill="#ff0000"/>
-                </marker>
-                <marker id="tall" markerUnits="strokeWidth" markerWidth="10"
-                    markerHeight="20" refX="10" refY="10" viewBox="0 0 20 20">
-                    <rect x="-20" y="-20" width="60" height="60" fill="#00ff00"/>
-                </marker>
-                <marker id="slice" markerUnits="userSpaceOnUse" markerWidth="40"
-                    markerHeight="20" refX="10" refY="10" viewBox="0 0 20 20"
-                    preserveAspectRatio="xMidYMid slice">
-                    <rect width="20" height="20" fill="#0000ff"/>
-                </marker>
-                <marker id="aligned" markerUnits="userSpaceOnUse" markerWidth="40"
-                    markerHeight="20" refX="10" refY="10" viewBox="0 0 20 20"
-                    preserveAspectRatio="xMaxYMid meet">
-                    <rect x="-20" y="-20" width="60" height="60" fill="#ff00ff"/>
-                </marker>
-            </defs>
-            <path d="M49 30H50" marker-end="url(#wide)"/>
-            <path d="M99 70H100" stroke-width="2" marker-end="url(#tall)"/>
-            <path d="M49 110H50" marker-end="url(#slice)"/>
-            <path d="M99 150H100" marker-end="url(#aligned)"/>
-        </svg>"##;
-        let tree = usvg::Tree::from_str(svg, &usvg::Options::default()).unwrap();
-        for scale in [1, 2] {
-            let mut pixmap = tiny_skia::Pixmap::new(200 * scale, 200 * scale).unwrap();
-            crate::render(
-                &tree,
-                tiny_skia::Transform::from_scale(scale as f32, scale as f32),
-                &mut pixmap.as_mut(),
-            );
-            // Compare the full viewport rectangles, including the pixels that lie
-            // outside a meet viewBox or inside a slice viewBox but outside its viewport.
-            for y in 0..200 {
-                for x in 0..200 {
-                    let expected = if (30..70).contains(&x) && (20..40).contains(&y) {
-                        [255, 0, 0, 255]
-                    } else if (90..110).contains(&x) && (50..90).contains(&y) {
-                        [0, 255, 0, 255]
-                    } else if (30..70).contains(&x) && (100..120).contains(&y) {
-                        [0, 0, 255, 255]
-                    } else if (70..110).contains(&x) && (140..160).contains(&y) {
-                        [255, 0, 255, 255]
-                    } else {
-                        [0, 0, 0, 0]
-                    };
-                    let pixel = pixmap.pixel(x * scale, y * scale).unwrap();
-                    assert_eq!(
-                        [pixel.red(), pixel.green(), pixel.blue(), pixel.alpha()],
-                        expected,
-                        "pixel ({x}, {y}) at scale {scale}"
-                    );
-                }
-            }
-        }
-    }
-
     // Derived from https://github.com/servo/servo/issues/42258.
     #[test]
     fn filter_bbox_outside_int_rect() {

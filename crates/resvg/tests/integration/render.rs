@@ -823,6 +823,7 @@ use crate::render;
 #[test] fn painting_marker_with_markerUnits_eq_userSpaceOnUse() { assert_eq!(render("tests/painting/marker/with-markerUnits=userSpaceOnUse"), 0); }
 #[test] fn painting_marker_with_viewBox_1() { assert_eq!(render("tests/painting/marker/with-viewBox-1"), 0); }
 #[test] fn painting_marker_with_viewBox_2() { assert_eq!(render("tests/painting/marker/with-viewBox-2"), 0); }
+#[test] fn painting_marker_with_viewBox_and_preserveAspectRatio_eq_slice() { assert_eq!(render("tests/painting/marker/with-viewBox-and-preserveAspectRatio=slice"), 0); }
 #[test] fn painting_marker_zero_length_path_1() { assert_eq!(render("tests/painting/marker/zero-length-path-1"), 0); }
 #[test] fn painting_marker_zero_length_path_2() { assert_eq!(render("tests/painting/marker/zero-length-path-2"), 0); }
 #[test] fn painting_marker_zero_sized_stroke() { assert_eq!(render("tests/painting/marker/zero-sized-stroke"), 0); }

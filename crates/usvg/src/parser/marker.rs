@@ -10,7 +10,7 @@ use tiny_skia_path::Point;
 use super::converter;
 use super::svgtree::{AId, EId, SvgNode};
 use crate::{
-    ApproxEqUlps, ApproxZeroUlps, ClipPath, Fill, Group, Node, NonZeroRect, Path, Size, Transform,
+    ApproxEqUlps, ApproxZeroUlps, ClipPath, Fill, Group, Node, NonZeroRect, Path, Transform,
     ViewBox,
 };
 
@@ -98,12 +98,18 @@ fn resolve(
 
     let r = convert_rect(marker_node, state)?;
 
-    let view_box = marker_node.parse_viewbox().map(|vb| ViewBox {
-        rect: vb,
-        aspect: marker_node
-            .attribute(AId::PreserveAspectRatio)
-            .unwrap_or_default(),
-    });
+    let view_box_ts = marker_node
+        .parse_viewbox()
+        .map(|vb| {
+            ViewBox {
+                rect: vb,
+                aspect: marker_node
+                    .attribute(AId::PreserveAspectRatio)
+                    .unwrap_or_default(),
+            }
+            .to_transform(r.size())
+        })
+        .unwrap_or_default();
 
     let has_overflow = {
         let overflow = marker_node.attribute(AId::Overflow);
@@ -112,14 +118,10 @@ fn resolve(
     };
 
     let clip_path = if has_overflow {
-        // Clip to the marker viewport, expressed in the marker content's coordinates.
-        // With meet/slice, the viewport can be larger/smaller than the viewBox.
-        let viewport = r.size().to_non_zero_rect(0.0, 0.0);
-        let clip_rect = if let Some(vbox) = view_box {
-            viewport.transform(vbox.to_transform(r.size()).invert()?)?
-        } else {
-            viewport
-        };
+        let clip_rect = r
+            .size()
+            .to_non_zero_rect(0.0, 0.0)
+            .transform(view_box_ts.invert()?)?;
 
         let mut clip_path = ClipPath::empty(cache.gen_clip_path_id());
 
@@ -183,15 +185,8 @@ fn resolve(
             ts = ts.pre_rotate(angle);
         }
 
-        if let Some(vbox) = view_box {
-            let size = Size::from_wh(r.width() * stroke_scale, r.height() * stroke_scale).unwrap();
-            let vbox_ts = vbox.to_transform(size);
-            let (sx, sy) = vbox_ts.get_scale();
-            ts = ts.pre_scale(sx, sy);
-        } else {
-            ts = ts.pre_scale(stroke_scale, stroke_scale);
-        }
-
+        let (sx, sy) = view_box_ts.get_scale();
+        ts = ts.pre_scale(sx * stroke_scale, sy * stroke_scale);
         ts = ts.pre_translate(-r.x(), -r.y());
 
         // TODO: do not create a group when no clipPath
