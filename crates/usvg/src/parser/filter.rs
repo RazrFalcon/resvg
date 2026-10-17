@@ -836,8 +836,6 @@ fn convert_image_inner(
         super::converter::convert_element(node, &state, cache, &mut root);
         return if root.has_children() {
             root.calculate_bounding_boxes();
-            // Resolve paints before the filter is shared between multiple nodes.
-            // The final tree pass cannot mutate a shared filter's image root.
             super::paint_server::update_paint_servers(
                 &mut root,
                 Transform::default(),
