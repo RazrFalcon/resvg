@@ -131,6 +131,7 @@ fn resolve(
         path.fill = Some(Fill::default());
 
         clip_path.root.children.push(Node::Path(Box::new(path)));
+        clip_path.root.calculate_bounding_boxes();
 
         Some(Arc::new(clip_path))
     } else {

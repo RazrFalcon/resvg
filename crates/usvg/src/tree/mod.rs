@@ -1176,6 +1176,7 @@ impl Group {
     ///
     /// Conceptually, this is `stroke_bounding_box` expanded and/or clipped
     /// by `filters_bounding_box`, but also including all the children.
+    /// Groups without filters are additionally clipped by their clip path.
     /// This is the bounding box `resvg` will later use to allocate layers/pixmaps
     /// during isolated groups rendering.
     ///
@@ -1922,7 +1923,19 @@ impl Group {
         if let Some(filter_bbox) = self.filters_bounding_box() {
             self.layer_bounding_box = filter_bbox;
         } else {
-            self.layer_bounding_box = layer_bbox.to_non_zero_rect()?;
+            let mut layer_bbox = layer_bbox.to_non_zero_rect()?;
+            // Nothing outside the clip path is visible. Filtered groups are excluded above,
+            // because filters are applied before clipping and need their whole region.
+            // The clip's stroke bounding box is used because, unlike the object one,
+            // it covers the glyph outlines of text.
+            if let Some(clip) = &self.clip_path {
+                let clip_bbox = clip.root.stroke_bounding_box.transform(clip.transform)?;
+                layer_bbox = layer_bbox
+                    .to_rect()
+                    .intersect(&clip_bbox)?
+                    .to_non_zero_rect()?;
+            }
+            self.layer_bounding_box = layer_bbox;
         }
 
         self.abs_layer_bounding_box = self.layer_bounding_box.transform(self.abs_transform)?;
