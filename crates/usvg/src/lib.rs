@@ -63,8 +63,8 @@ pub use parser::*;
 pub use text::*;
 pub use tree::*;
 
-pub use roxmltree;
 pub use kurbo;
+pub use roxmltree;
 
 #[cfg(feature = "text")]
 pub use fontdb;
