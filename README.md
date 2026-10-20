@@ -70,6 +70,24 @@ Since `resvg` doesn't rely on any system libraries it allows us to have reproduc
 on all supported platforms. Meaning if you render an SVG file on x86 Windows and then render it
 on ARM macOS - the produced image will be identical. Each pixel would have the same value.
 
+## Pattern sampling
+
+Pattern tiles use bicubic sampling by default. The CLI accepts
+`--pattern-filter nearest`, `--pattern-filter bilinear` or `--pattern-filter bicubic`.
+This controls sampling of rasterized SVG patterns, independently of `image-rendering`.
+
+Rust callers can select the filter without changing SVG parsing options:
+
+```rust,ignore
+let options = resvg::Options {
+    pattern_filter: resvg::tiny_skia::FilterQuality::Bilinear,
+};
+resvg::render_with_options(&tree, transform, &options, &mut pixmap.as_mut());
+```
+
+`render_node_with_options` also accepts these options. The existing `render` and
+`render_node` functions retain their defaults.
+
 ## Limitations
 
 - No animations<br>
