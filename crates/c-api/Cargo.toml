@@ -34,4 +34,4 @@ capi = []
 generation = false
 
 [package.metadata.capi.install.include]
-asset = [{ from="resvg.h" }]
+asset = [{ from="resvg.h" }, { from="ResvgQt.h" }]
