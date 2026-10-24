@@ -8,7 +8,7 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 
-## [0.49.0] 2026-10-21
+## [0.49.0] 2026-10-24
 
 This release has an MSRV of 1.85.0 for `usvg` and `resvg` and the C API.
 
